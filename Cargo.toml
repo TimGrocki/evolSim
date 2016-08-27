@@ -1,0 +1,6 @@
+[package]
+name = "evolution_sim"
+version = "0.1.0"
+authors = ["user"]
+
+[dependencies]
