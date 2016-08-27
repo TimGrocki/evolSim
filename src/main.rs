@@ -9,7 +9,7 @@ trait IsGameField {
 	fn rain(&mut self) {}
 	fn dry(&mut self) {}
 	fn gatherRessources(&mut self) -> i32 {0}
-	fn get_animals(&self) -> &std::vec::Vec<&IsAnimal>;
+	//fn get_animals(&self) -> &std::vec::Vec<&IsAnimal>;
 }
 impl fmt::Display for IsGameField {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -31,23 +31,23 @@ impl<N: IsGameField> fmt::Display for Field<N> {
 }
 
 
-struct SimpleField<'a> {
+struct SimpleField {
 	repr: i32,	
 	x: i32,	
 	y: i32,	
 	energy: i32,	
-	animals: std::vec::Vec<&'a IsAnimal>,
+	//animals: std::vec::Vec<&'a IsAnimal>,
 }
-impl<'a> IsGameField for SimpleField<'a> {
+impl IsGameField for SimpleField {
 	fn get_repr(&self) -> i32 {
 		self.repr
 	}
 	fn get_energy(&self) -> i32 {
 		self.energy
 	}
-	fn get_animals(&self) -> &std::vec::Vec<& IsAnimal> {
+	/*fn get_animals(&self) -> &std::vec::Vec<& IsAnimal> {
 		&self.animals
-	}
+	}*/
 
 
 	fn rain(&mut self) {
@@ -65,20 +65,20 @@ impl<'a> IsGameField for SimpleField<'a> {
 		}
 	}
 }
-impl<'a> fmt::Display for SimpleField<'a> {
+impl fmt::Display for SimpleField {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "S")
     }
 }
 
 
-struct FancyField<'a> {
+struct FancyField {
 	x: i32,	
 	y: i32,	
 	energy: i32,	
-	animals: std::vec::Vec<&'a IsAnimal>,
+	//animals: std::vec::Vec<&'a IsAnimal>,
 }
-impl<'a> IsGameField for FancyField<'a> {
+impl IsGameField for FancyField {
 	fn get_repr(&self) -> i32 {
 		2
 	}
@@ -100,64 +100,21 @@ impl<'a> IsGameField for FancyField<'a> {
 		println!("{}", amount);
 		amount		
 	}
-	fn get_animals(&self) -> &std::vec::Vec<& IsAnimal> {
+	/*fn get_animals(&self) -> &std::vec::Vec<& IsAnimal> {
 		&self.animals
-	}
+	}*/
 }
-impl<'a> fmt::Display for FancyField<'a> {
+impl fmt::Display for FancyField {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "F")
     }
-}
-
-enum FieldEnum {
-	SimpleField(i32,i32,usize),
-	FancyField(i32,i32,usize),
-}
-
-impl Copy for FieldEnum {
-}
-
-impl Clone for FieldEnum {
-	fn clone(&self) -> Self {
-		match *self {
-			FieldEnum::SimpleField(a,b,c) => FieldEnum::SimpleField(a,b,c),
-			FieldEnum::FancyField(a,b,c) => FieldEnum::FancyField(a,b,c)
-		}
-	}
-}
-
-impl FieldEnum {
-	fn getType(&self) -> i32 {
-		match *self {
-			FieldEnum::SimpleField(a,b,c) => 0,
-			FieldEnum::FancyField(a,b,c) => 1
-		}
-	}
-	fn getFieldMut<'a>(&'a self, simple: &'a mut std::vec::Vec<SimpleField>, fancy: &'a mut std::vec::Vec<FancyField>) -> &mut IsGameField {
-		match *self {
-			FieldEnum::SimpleField(a,b,c) => &mut simple[c] as & mut IsGameField,
-			FieldEnum::FancyField(a,b,c) => &mut fancy[c] as & mut IsGameField
-		}
-	}
-	fn getPos<'a>(&'a self) -> (i32,i32) {
-		match *self {
-			FieldEnum::SimpleField(a,b,c) => (a,b),
-			FieldEnum::FancyField(a,b,c) => (a,b)
-		}
-	}
-	fn getField<'a>(&'a self, simple: &'a std::vec::Vec<SimpleField>, fancy: &'a std::vec::Vec<FancyField>) -> & IsGameField {
-		match *self {
-			FieldEnum::SimpleField(a,b,c) => &simple[c] as & IsGameField,
-			FieldEnum::FancyField(a,b,c) => &fancy[c] as & IsGameField
-		}
-	}
 }
 
 
 /*
 	basic animals
 */
+/*
 trait IsAnimal {
 	fn eat(&mut self, simple: &mut std::vec::Vec<SimpleField>, fancy: &mut std::vec::Vec<FancyField>) {
 	}
@@ -193,125 +150,131 @@ impl IsAnimal for SomeAnimal {
 		self.energy + 100
 	}
 }
+*/
+
+struct Board<'a, 'b, 'c> {
+	simple: &'a mut std::vec::Vec<SimpleField>,
+	fancy:  &'b mut std::vec::Vec<FancyField>,
+	byPos:  &'c mut std::vec::Vec<std::vec::Vec<FieldEnum>>,
+}
+impl<'a, 'b, 'c> Board<'a, 'b, 'c> {
+	fn getFieldRepr(&self, x: usize, y: usize) -> i32 {
+		self.byPos[x][y].getField(self).get_energy()
+	}
+
+	fn rain(&mut self) {
+		for x in 0..9 {
+			for y in 0..9 {
+				self.byPos[x][y].clone().getFieldMut(self).rain();
+			}
+		}
+	}
+
+	fn dry(&mut self) {
+		for x in 0..9 {
+			for y in 0..9 {
+				self.byPos[x][y].clone().getFieldMut(self).dry();
+			}
+		}
+	}
+}
+impl<'a, 'b, 'c> fmt::Display for Board<'a, 'b, 'c> {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		for x in 0..9 {
+			for y in 0..9 {
+				write!(f," {}", self.byPos[x][y].getField(self).get_energy());
+			}
+			write!(f,"\n");
+		}
+		write!(f,"\n");
+		write!(f,"\n")
+	}
+}
+
+enum FieldEnum {
+	simple(usize),
+	fancy(usize),
+}
+impl FieldEnum {
+	fn getField<'a, 'b, 'c, 'd>(&'a self, board: &'a Board<'b, 'c, 'd>) -> &'a IsGameField {
+		match *self {
+			FieldEnum::simple(a) => &board.simple[a],
+			FieldEnum::fancy(a) => &board.fancy[a],
+		}
+	}
+	fn getFieldMut<'a, 'b, 'c, 'd, 'e>(&'a self, board: &'a mut Board<'b, 'c, 'd>) -> &'a mut IsGameField {
+		match *self {
+			FieldEnum::simple(a) => &mut board.simple[a],
+			FieldEnum::fancy(a) => &mut board.fancy[a],
+		}
+	}
+}
+impl Copy for FieldEnum {
+}
+
+impl Clone for FieldEnum {
+	fn clone(&self) -> Self {
+		match *self {
+			FieldEnum::simple(a) => FieldEnum::simple(a),
+			FieldEnum::fancy(a) => FieldEnum::fancy(a)
+		}
+	}
+}
 
 
 /*
-	usefull stuff
-*/
-fn displayBoard (board : &std::vec::Vec<std::vec::Vec<FieldEnum>>, simple: &std::vec::Vec<SimpleField>, fancy: &std::vec::Vec<FancyField>) {
-	for x in 0..9 {
-		for y in 0..9 {
-			print!(" {}",board[x][y].getField(simple,fancy).get_repr());
-		}
-		print!("\t");
-		for y in 0..9 {
-			print!(" {}",board[x][y].getField(simple,fancy).get_energy());
-		}
-		print!("\n");
-	};
-	print!("\n");
-	print!("\n");
-}
-fn addRessources (board : &std::vec::Vec<std::vec::Vec<FieldEnum>>, simple : &mut std::vec::Vec<SimpleField>, fancy: &mut std::vec::Vec<FancyField>) {
-	for x in 0..9 {
-		for y in 0..9 {
-			board[x][y].getFieldMut(simple,fancy).rain();
-		}
-	};
-}
-fn drainRessources (board : &std::vec::Vec<std::vec::Vec<FieldEnum>>, simple : &mut std::vec::Vec<SimpleField>, fancy: &mut std::vec::Vec<FancyField>) {
-	for x in 0..9 {
-		for y in 0..9 {
-			board[x][y].getFieldMut(simple,fancy).dry();
-		}
-	};
+fn getMutable<'a, T:IsGameField> ( index: usize, vector : &'a mut std::vec::Vec<T>) -> &'a mut IsGameField {
+	&mut vector[index]
 }
 
-struct Test<'a> {
-	special: &'a mut IsGameField,
-}
+fn get<'a> ( index: usize, board: Board) -> &'a IsGameField {
+	&vector[index]
+}*/
 
 fn main() {
 	let mut simpleFields : std::vec::Vec<SimpleField> = Vec::new();
 	let mut fancyFields : std::vec::Vec<FancyField> = Vec::new();
+	let mut fieldsByPos : std::vec::Vec<std::vec::Vec<FieldEnum>> = Vec::new();
 
 	for x in 0..9 {
 		for y in 0..9 {
-			if y > 6 {
-				simpleFields.push(SimpleField { repr: 2, x:x, y:y , energy:4 , animals:Vec::new() });
+			if y > 4 {
+				simpleFields.push(SimpleField { repr: 2, x:x, y:y , energy:4 } );
 			} else {
-				fancyFields.push(FancyField { x:x, y:y, energy:4, animals:Vec::new() });
+				fancyFields.push(FancyField { x:x, y:y, energy:4 } );
 			}
 		}
 	};
 
-	//let mut testArray : std::vec:Vec<Test> = Vec::new();
-	let mut test1 = Test {special: &mut simpleFields[0] };
-	let mut test2 = Test {special: &mut fancyFields[1] };
-
-	println!("{}",test1.special.get_energy());
-	println!("{}",test2.special.get_energy());
-	//println!("{}",test3.special.get_repr());
-	
-	println!("-----------");
-
-	test1.special.rain();
-	test2.special.rain();
-	//test3.special.rain();
-
-	println!("-----------");
-
-	println!("{}",test1.special.get_energy());
-	println!("{}",test2.special.get_energy());
-	//println!("{}",test3.special.get_repr());
-	
-}
-
-fn main_old() {
-	let mut simpleFields : std::vec::Vec<SimpleField> = Vec::new();
-	let mut fancyFields : std::vec::Vec<FancyField> = Vec::new();
-
-	for x in 0..9 {
-		for y in 0..9 {
-			if y > 6 {
-				simpleFields.push(SimpleField { repr: 2, x:x, y:y , energy:4 , animals:Vec::new() });
-			} else {
-				fancyFields.push(FancyField { x:x, y:y, energy:4, animals:Vec::new() });
-			}
-		}
-	};
-
-	let mut board : std::vec::Vec<std::vec::Vec<FieldEnum>> = Vec::new();
 	let mut fancyCounter = 0;
 	let mut simpleCounter = 0;
 	for x in 0..9 {
 		let mut row : std::vec::Vec<FieldEnum> = Vec::new();
 		for y in 0..9 {
 			if simpleCounter < simpleFields.len() && simpleFields[simpleCounter].x == x && simpleFields[simpleCounter].y == y {
-				row.push(FieldEnum::SimpleField(x,y,simpleCounter));
+				row.push(FieldEnum::simple(simpleCounter));
 				simpleCounter += 1;
 			} else if fancyCounter < fancyFields.len() && fancyFields[fancyCounter].x == x && fancyFields[fancyCounter].y == y { 
-				row.push(FieldEnum::FancyField(x,y,fancyCounter));
+				row.push(FieldEnum::fancy(simpleCounter));
 				fancyCounter += 1;
 			}
 			
 		}
-		board.push(row);
+		fieldsByPos.push(row);
 	};
 
-	displayBoard(&board, &simpleFields, &fancyFields);
+	let mut board = Board{simple: &mut simpleFields, fancy: &mut fancyFields, byPos: &mut fieldsByPos};
 
-	let mut animal = SomeAnimal { field: board[4][7], energy: 5 };
-
-	//ten loops for now
-	for x in 0..9 {
-		addRessources(&board, &mut simpleFields, &mut fancyFields);
-		addRessources(&board, &mut simpleFields, &mut fancyFields);
-		drainRessources(&board, &mut simpleFields, &mut fancyFields);
-		animal.eat(&mut simpleFields, &mut fancyFields);
-		animal.roam(&board);
-		println!("{}",animal.get_repr());
-		displayBoard(&board, &simpleFields, &fancyFields);
-	}
+	println!("{}",board);
+	board.rain();
+	println!("{}",board);
+	board.dry();
+	board.dry();
+	board.dry();
+	println!("{}",board);
+	board.rain();
+	board.rain();
+	board.rain();
+	board.rain();
+	println!("{}",board);
 }
-
